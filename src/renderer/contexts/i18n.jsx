@@ -7,7 +7,7 @@ import {
     useMemo,
     useState,
 } from 'react';
-import useSettings from '../hooks/useSettings.js';
+import { useSettings } from './settings';
 
 
 // Constants
@@ -15,149 +15,114 @@ const Context = createContext();
 
 const messages = {
     es: {
-        title: 'BackBit',
-        subtitle:
-			'Sincroniza una carpeta de origen hacia una de destino (modo backup)',
-        origin: 'Origen',
-        pick: 'Elegir',
-        destination: 'Destino',
-        analyze: 'Analizar',
-        cancelAnalyze: 'Cancelar análisis',
-        sync: 'Sincronizar',
-        cancelSync: 'Cancelar sync',
-        actions: 'Acciones:',
-        toCopy: 'A copiar:',
-        autoScroll: 'Auto-scroll',
-        analyzing: 'Analizando…',
-        copy: 'Agregar',
-        update: 'Actualizar',
-        delete: 'Eliminar',
-        copying: 'Copiando',
-        deleting: 'Eliminando…',
-        copied: 'Copiado',
-        deleted: 'Eliminado',
-        analyzingOrigin: 'Analizando origen:',
-        analyzingDest: 'Analizando destino:',
-        chooseFromHistory: 'Elegí origen usado…',
-        pickPlaceholder: 'Elegí carpeta...',
-        settings: 'Configuración',
-        language: 'Idioma',
-        settingsDescription: 'Configura las preferencias de la aplicación.',
+        Analyzing: 'Analizando',
+        'Stop analysis': 'Detener análisis',
+        Update: 'Actualizar',
+        Backup: 'Respaldar',
+        Settings: 'Configuración',
+        Language: 'Idioma',
+        'Configure application preferences.': 'Configura las preferencias de la aplicación.',
+        'Select folders to analyze': 'Elegir carpetas a analizar',
+        From: 'Desde',
+        To: 'Hacia',
+        actions: 'acciones',
+        action: 'acción',
+        'To copy': 'A copiar',
+        'Auto-scroll': 'Auto-scroll',
+        Select: 'Seleccionar',
+        Delete: 'Eliminar',
+        add: 'agregar',
+        update: 'actualizar',
+        updated: 'actualizado',
+        delete: 'eliminar',
+        deleted: 'eliminado',
+        added: 'agregado',
+        copying: 'copiando',
+        cancelled: 'cancelado',
+        size: 'tamaño',
+        date: 'fecha',
+        'No differences found': 'No se encontraron diferencias',
+        'to add': 'a agregar',
+        'to update': 'a actualizar',
+        'to delete': 'a eliminar',
     },
     en: {
-        title: 'BackBit',
-        subtitle: 'Sync source folder to destination (backup mode)',
-        origin: 'Source',
-        pick: 'Pick',
-        destination: 'Destination',
-        analyze: 'Analyze',
-        cancelAnalyze: 'Cancel analyze',
-        sync: 'Sync',
-        cancelSync: 'Cancel sync',
-        actions: 'Actions:',
-        toCopy: 'To copy:',
-        autoScroll: 'Auto-scroll',
-        analyzing: 'Analyzing…',
-        copy: 'Add',
-        update: 'Update',
-        delete: 'Delete',
-        copying: 'Copying',
-        deleting: 'Deleting…',
-        copied: 'Copied',
-        deleted: 'Deleted',
-        analyzingOrigin: 'Analyzing source:',
-        analyzingDest: 'Analyzing destination:',
-        chooseFromHistory: 'Choose used source…',
-        pickPlaceholder: 'Pick a folder...',
-        settings: 'Settings',
-        language: 'Language',
-        settingsDescription: 'Configure application preferences.',
-    },
-    pt: {
-        title: 'BackBit',
-        subtitle: 'Sincroniza a pasta de origem para o destino (modo backup)',
-        origin: 'Origem',
-        pick: 'Escolher',
-        destination: 'Destino',
-        analyze: 'Analisar',
-        cancelAnalyze: 'Cancelar análise',
-        sync: 'Sincronizar',
-        cancelSync: 'Cancelar sync',
-        actions: 'Ações:',
-        toCopy: 'A copiar:',
-        autoScroll: 'Auto-scroll',
-        analyzing: 'Analisando…',
-        copy: 'Adicionar',
-        update: 'Atualizar',
-        delete: 'Excluir',
-        copying: 'Copiando',
-        deleting: 'Excluindo…',
-        copied: 'Copiado',
-        deleted: 'Excluído',
-        analyzingOrigin: 'Analisando origem:',
-        analyzingDest: 'Analisando destino:',
-        chooseFromHistory: 'Escolher origem usada…',
-        pickPlaceholder: 'Escolher pasta...',
-        settings: 'Configurações',
-        language: 'Idioma',
-        settingsDescription: 'Configure as preferências do aplicativo.',
+        Analyzing: 'Analyzing',
+        'Stop analysis': 'Stop analysis',
+        Update: 'Update',
+        Backup: 'Backup',
+        Settings: 'Settings',
+        Language: 'Language',
+        'Configure application preferences.': 'Configure application preferences.',
+        'Select folders to analyze': 'Select folders to analyze',
+        From: 'From',
+        To: 'To',
+        actions: 'actions',
+        action: 'action',
+        'To copy': 'To copy',
+        'Auto-scroll': 'Auto-scroll',
+        Select: 'Select',
+        Delete: 'Delete',
+        add: 'add',
+        update: 'update',
+        updated: 'updated',
+        delete: 'delete',
+        deleted: 'deleted',
+        added: 'added',
+        copying: 'copying',
+        cancelled: 'cancelled',
+        size: 'size',
+        date: 'date',
+        'No differences found': 'No differences found',
+        'to add': 'to add',
+        'to update': 'to update',
+        'to delete': 'to delete',
     },
 };
 
+const defaultLang = 'en';
 
-// Internal
-const useI18nLogic = () => {
-    const { settings, saveSettings } = useSettings();
-    const [currentLang, setCurrentLang] = useState('es');
-
-    const availableLanguages = useMemo(() => Object.keys(messages), []);
-
-    const systemLang = useMemo(() => {
-        const lang = typeof navigator !== 'undefined' && navigator.language
-            ? navigator.language.split('-')[0]
-            : 'en';
-        return lang;
-    }, []);
-
-    // Load language from settings or system on mount / when settings change
-    useEffect(() => {
-        const fromSettings = settings?.lang;
-        const fallback = availableLanguages.includes(systemLang) ? systemLang : 'en';
-        const resolved = fromSettings || fallback;
-        setCurrentLang(resolved);
-    }, [settings?.lang, systemLang, availableLanguages]);
-
-    const changeLang = useCallback(async (newLang) => {
-        setCurrentLang(newLang);
-        await saveSettings({ lang: newLang });
-    },
-    [saveSettings]);
-
-    const t = useCallback(key => messages[currentLang]?.[key] || key,
-        [currentLang]);
-
-    return useMemo(() => ({
-        currentLang,
-        changeLang,
-        t,
-        availableLanguages,
-    }),
-    [currentLang, changeLang, t, availableLanguages]);
-};
+const availableLanguages = Object.keys(messages);
 
 
 // Exported
 export const I18nContext = ({ children }) => {
-    const i18n = useI18nLogic();
+    const { settings: { language: settingsLanguage } } = useSettings();
 
-    return <Context.Provider value={i18n}>{children}</Context.Provider>;
+    const [language, setLanguage] = useState(defaultLang);
+
+    useEffect(() => {
+        if (settingsLanguage) {
+            setLanguage(settingsLanguage);
+            return;
+        }
+        const systemLang = typeof navigator !== 'undefined' && navigator.language
+            ? navigator.language.split('-')[0]
+            : defaultLang
+        const res = availableLanguages.includes(systemLang) ? systemLang : defaultLang;
+        setLanguage(res);
+    }, [settingsLanguage]);
+
+    const state = useMemo(() => ({
+        language,
+        setLanguage,
+    }),
+    [language]);
+
+    return <Context.Provider value={state}>{children}</Context.Provider>;
 };
 
 
 export const useI18n = () => {
-    const context = useContext(Context);
-    if (!context) {
-        throw new Error('useI18n must be used within an I18nProvider');
-    }
-    return context;
+    const { language, setLanguage } = useContext(Context);
+    const { saveSettings } = useSettings();
+
+    const changeLanguage = useCallback(async (n) => {
+        setLanguage(n);
+        await saveSettings({ language: n });
+    }, [saveSettings, setLanguage]);
+
+    const t = useCallback(key => messages[language]?.[key] || key, [language]);
+
+    return { t, language, changeLanguage, availableLanguages };
 };

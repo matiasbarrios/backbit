@@ -8,7 +8,7 @@ import {
     useMemo,
     useState,
 } from 'react';
-import useSettings from '../hooks/useSettings';
+import { useSettings } from './settings';
 
 
 // Variables
@@ -23,19 +23,13 @@ const getCurrentTheme = () => window.matchMedia('(prefers-color-scheme: dark)').
 export const ThemeContext = ({ children }) => {
     const systemTheme = useMemo(getCurrentTheme, []);
     const [theme, setTheme] = useState(systemTheme);
-    const { settings, saveSettings } = useSettings();
-
-    const state = useMemo(() => ({
-        theme,
-        setTheme,
-    }),
-    [theme]);
+    const { settings: { theme: settingsTheme }, saveSettings } = useSettings();
 
     useEffect(() => {
-        if (settings?.theme) {
-            setTheme(settings.theme);
+        if (settingsTheme) {
+            setTheme(settingsTheme);
         }
-    }, [settings?.theme]);
+    }, [settingsTheme]);
 
     useEffect(() => {
         const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
@@ -43,7 +37,7 @@ export const ThemeContext = ({ children }) => {
         const handler = (e) => {
             const newTheme = e.matches ? 'dark' : 'light';
             setTheme(newTheme);
-            if (settings?.theme) {
+            if (settingsTheme) {
                 saveSettings({ theme: newTheme });
             }
         };
@@ -53,7 +47,13 @@ export const ThemeContext = ({ children }) => {
         return () => {
             mediaQuery.removeEventListener('change', handler);
         };
-    }, [settings?.theme, saveSettings]);
+    }, [settingsTheme, saveSettings]);
+
+    const state = useMemo(() => ({
+        theme,
+        setTheme,
+    }),
+    [theme]);
 
     return (
         <Context.Provider value={state}>

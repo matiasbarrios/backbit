@@ -1,13 +1,19 @@
 // Requirements
 import { GearIcon } from '@radix-ui/react-icons';
 import { Dialog, Flex, IconButton, Select, Text } from '@radix-ui/themes';
-import { useI18n } from '../contexts/i18n.jsx';
+import { useI18n } from '../../contexts/i18n.jsx';
+
+
+// Constants
+const languageName = {
+    es: 'Español',
+    en: 'English',
+};
 
 
 // Exported
 export default () => {
-    const { t, currentLang, changeLang, availableLanguages } = useI18n();
-
+    const { t, language, changeLanguage, availableLanguages } = useI18n();
     return (
         <Dialog.Root>
             <Dialog.Trigger>
@@ -17,17 +23,24 @@ export default () => {
             </Dialog.Trigger>
 
             <Dialog.Content maxWidth="420px">
-                <Dialog.Title>{t('settings')}</Dialog.Title>
-                <Dialog.Description size="1" color="gray">{t('settingsDescription')}</Dialog.Description>
-
+                <Dialog.Title>
+                    {t('Settings')}
+                </Dialog.Title>
+                <Dialog.Description size="1" color="gray">
+                    {t('Configure application preferences.')}
+                </Dialog.Description>
                 <Flex direction="column" gap="3" pt="2">
                     <Flex align="center" justify="between" gap="3">
-                        <Text size="2">{t('language')}</Text>
-                        <Select.Root value={currentLang} onValueChange={changeLang}>
+                        <Text size="2">
+                            {t('Language')}
+                        </Text>
+                        <Select.Root value={language} onValueChange={changeLanguage}>
                             <Select.Trigger size="2" />
                             <Select.Content>
                                 {availableLanguages.map(code => (
-                                    <Select.Item key={code} value={code}>{code}</Select.Item>
+                                    <Select.Item key={code} value={code}>
+                                        {languageName[code]}
+                                    </Select.Item>
                                 ))}
                             </Select.Content>
                         </Select.Root>

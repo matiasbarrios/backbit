@@ -1,6 +1,8 @@
+// Requirements
 import { contextBridge, ipcRenderer } from 'electron';
 
-// Basic electron APIs
+
+// Exported
 const electronAPI = {
     ipcRenderer: {
         sendMessage(channel, ...args) {
@@ -8,27 +10,26 @@ const electronAPI = {
         },
         on(channel, func) {
             const validChannels = [
-                'analyze-progress',
-                'analyze-item',
-                'analyze-complete',
-                'analyze-stopped',
-                'sync-progress',
-                'sync-stopped',
+                'analysis-step-added',
+                'analysis-progress',
+                'analysis-completed',
+                'backup-progress',
+                'backup-cancelled',
             ];
             if (validChannels.includes(channel)) {
                 const subscription = (_event, ...args) => func(...args);
                 ipcRenderer.on(channel, subscription);
                 return () => ipcRenderer.removeListener(channel, subscription);
             }
+            return () => {};
         },
         once(channel, func) {
             const validChannels = [
-                'analyze-progress',
-                'analyze-item',
-                'analyze-complete',
-                'analyze-stopped',
-                'sync-progress',
-                'sync-stopped',
+                'analysis-step-added',
+                'analysis-progress',
+                'analysis-completed',
+                'backup-progress',
+                'backup-cancelled',
             ];
             if (validChannels.includes(channel)) {
                 ipcRenderer.once(channel, (_event, ...args) => func(...args));
@@ -36,63 +37,76 @@ const electronAPI = {
         },
         invoke(channel, ...args) {
             const validChannels = [
-                'pick-folder',
-                'analyze',
-                'analyze-cancel',
-                'sync',
-                'sync-cancel',
-                'reveal-in-origin',
-                'pairs-list',
-                'pairs-delete',
-                'settings-get',
-                'settings-set',
+                'settings-read',
+                'settings-write',
+
+                'history-read',
+                'history-write',
+
+                'folder-pick',
+                'folder-reveal-in-origin',
+
+                'analysis-start',
+                'analysis-cancel',
+
+                'backup-start',
+                'backup-cancel',
             ];
             if (validChannels.includes(channel)) {
                 return ipcRenderer.invoke(channel, ...args);
             }
+            return () => {};
         },
     },
 };
 
-// Custom APIs for renderer
+
 const api = {
-    pickFolder: () => ipcRenderer.invoke('pick-folder'),
-    analyze: (srcDir, dstDir) =>
-        ipcRenderer.invoke('analyze', { srcDir, dstDir }),
-    cancelAnalyze: () => ipcRenderer.invoke('analyze-cancel'),
-    sync: (srcDir, dstDir, plan) =>
-        ipcRenderer.invoke('sync', { srcDir, dstDir, plan }),
-    cancelSync: () => ipcRenderer.invoke('sync-cancel'),
-    onSyncStopped: (callback) => {
+    // Settings
+    settingsRead: () => ipcRenderer.invoke('settings-read'),
+    settingsWrite: payload => ipcRenderer.invoke('settings-write', payload),
+
+    // History
+    historyRead: () => ipcRenderer.invoke('history-read'),
+    historyWrite: h => ipcRenderer.invoke('history-write', h),
+
+    // Folders
+    folderPick: () => ipcRenderer.invoke('folder-pick'),
+    foldersRevealInOrigin: (source, relativePath) =>
+        ipcRenderer.invoke('folder-reveal-in-origin', { source, relativePath }),
+
+    // Analysis
+    onAnalysisStepAdded: (callback) => {
         const listener = (_event, payload) => callback(payload);
-        ipcRenderer.on('sync-stopped', listener);
-        return () => ipcRenderer.removeListener('sync-stopped', listener);
+        ipcRenderer.on('analysis-step-added', listener);
+        return () => ipcRenderer.removeListener('analysis-step-added', listener);
     },
-    listPairs: () => ipcRenderer.invoke('pairs-list'),
-    deletePair: (src, dst) => ipcRenderer.invoke('pairs-delete', { src, dst }),
-    getSettings: () => ipcRenderer.invoke('settings-get'),
-    setSettings: payload => ipcRenderer.invoke('settings-set', payload),
-    revealInOrigin: (srcDir, relPath) =>
-        ipcRenderer.invoke('reveal-in-origin', { srcDir, relPath }),
-    onProgress: (callback) => {
+    onAnalysisProgress: (callback) => {
         const listener = (_event, payload) => callback(payload);
-        ipcRenderer.on('sync-progress', listener);
-        return () => ipcRenderer.removeListener('sync-progress', listener);
+        ipcRenderer.on('analysis-progress', listener);
+        return () => ipcRenderer.removeListener('analysis-progress', listener);
     },
-    onAnalyze: (callback) => {
+    onAnalysisCompleted: (callback) => {
         const listener = (_event, payload) => callback(payload);
-        ipcRenderer.on('analyze-progress', listener);
-        return () => ipcRenderer.removeListener('analyze-progress', listener);
+        ipcRenderer.on('analysis-completed', listener);
+        return () => ipcRenderer.removeListener('analysis-completed', listener);
     },
-    onAnalyzeItem: (callback) => {
+    analysisStart: (source, destination) => ipcRenderer.invoke('analysis-start', { source, destination }),
+    analysisCancel: () => ipcRenderer.invoke('analysis-cancel'),
+
+    // Backup
+    backupStart: (source, destination, plan) =>
+        ipcRenderer.invoke('backup-start', { source, destination, plan }),
+    backupCancel: () => ipcRenderer.invoke('backup-cancel'),
+    onBackupCancelled: (callback) => {
         const listener = (_event, payload) => callback(payload);
-        ipcRenderer.on('analyze-item', listener);
-        return () => ipcRenderer.removeListener('analyze-item', listener);
+        ipcRenderer.on('backup-cancelled', listener);
+        return () => ipcRenderer.removeListener('backup-cancelled', listener);
     },
-    onAnalyzeComplete: (callback) => {
+    onBackupProgress: (callback) => {
         const listener = (_event, payload) => callback(payload);
-        ipcRenderer.on('analyze-complete', listener);
-        return () => ipcRenderer.removeListener('analyze-complete', listener);
+        ipcRenderer.on('backup-progress', listener);
+        return () => ipcRenderer.removeListener('backup-progress', listener);
     },
 };
 

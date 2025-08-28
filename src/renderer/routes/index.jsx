@@ -1,6 +1,6 @@
 // Requirements
-import Select from '../pages/select';
-import MainLayout from '../components/MainLayout.jsx';
+import Select from '../pages/folders/select.jsx';
+import Backup from '../pages/backup/index.jsx';
 
 
 // Constants
@@ -10,7 +10,7 @@ export default [
         element: <Select />,
     },
     {
-        route: '/main',
-        element: <MainLayout />,
+        route: '/backup',
+        element: <Backup />,
     },
 ];

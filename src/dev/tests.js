@@ -107,23 +107,24 @@ const main = async () => {
         const albums = ['Attic Recordings', 'Parking Lot Poems', 'Nocturne Cassette', 'Basement Echoes', 'Unfinished Demos', 'Static Flowers'];
         const nouns = ['Static', 'Dust', 'Soda', 'Lantern', 'Pollen', 'Quartz', 'Teacup', 'Matches', 'Velvet', 'Copper'];
         const verbs = ['Whispers', 'Glows', 'Cracks', 'Waltz', 'Repeats', 'Hums', 'Leans', 'Echoes'];
-        for (let i = 1; i <= count; i++) {
+
+        await Promise.all(Array.from({ length: count }, async (_, i) => {
             const artist = pick(artists);
             const album = pick(albums);
             const track = `${pad3(i)} - ${pick(nouns)} ${pick(verbs)}.mp3`;
             const rel = path.join('Indie Dump', artist, album, track);
             const content = `lofi ${artist} ${album} #${i}\n` + 'x'.repeat(50 + (i % 200));
             await writeFileWithMtime(path.join(originRoot, rel), content, TS.mid + i * 1000);
-        }
+        }));
     }
 
     // 7) Optional: extra only-in-destination files
     if (extraDest > 0) {
         console.log(`Adding ${extraDest} extra files only in destination...`);
-        for (let i = 1; i <= extraDest; i++) {
+        await Promise.all(Array.from({ length: extraDest }, async (_, i) => {
             const rel = path.join('Lost & Found', 'Abandoned Takes', `${pad3(i)} - Orphan ${i}.mp3`);
             await writeFileWithMtime(path.join(destinationRoot, rel), `orphan ${i}\n`, TS.older - i * 5000);
-        }
+        }));
     }
 
     console.log('Fixtures created successfully.');

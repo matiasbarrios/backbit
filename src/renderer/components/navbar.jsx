@@ -1,10 +1,11 @@
 // Requirements
 import { ArrowLeftIcon, MoonIcon, SunIcon } from '@radix-ui/react-icons';
 import { Box, Flex, IconButton } from '@radix-ui/themes';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useTheme } from '../../contexts/theme';
-import Settings from '../settings.jsx';
+import { useTheme } from '../contexts/theme.jsx';
+import Settings from '../pages/settings/edit.jsx';
+import { useBackup } from '../contexts/backup/index.jsx';
 
 
 // Constants
@@ -19,6 +20,7 @@ export default ({ navbarAlwaysOn = false }) => {
     const [scrolled, setScrolled] = useState(!!navbarAlwaysOn);
     const { pathname } = useLocation();
     const navigate = useNavigate();
+    const { analysisClear, backupClear } = useBackup();
 
     useEffect(() => {
         if (navbarAlwaysOn) return () => {};
@@ -47,12 +49,18 @@ export default ({ navbarAlwaysOn = false }) => {
     }),
     [scrolled]);
 
+    const handleBack = useCallback(async () => {
+        await analysisClear();
+        await backupClear();
+        navigate('/');
+    }, [analysisClear, backupClear, navigate]);
+
     return (
         <Box asChild style={navbarStyle}>
             <Flex align="center" justify="between" py="2" px="5" gap="3">
                 <Flex align="center" justify="start">
                     {pathname !== '/' && (
-                        <IconButton variant="ghost" size="1" radius="full" onClick={() => navigate('/') }>
+                        <IconButton variant="ghost" size="1" radius="full" onClick={handleBack}>
                             <ArrowLeftIcon width="16" height="16" />
                         </IconButton>
                     )}

@@ -1,28 +1,22 @@
 // Requirements
-import fs from 'node:fs';
 import { join } from 'node:path';
 import { electronApp, is, optimizer } from '@electron-toolkit/utils';
-import { app, BrowserWindow, dialog, ipcMain, Menu, shell } from 'electron';
+import { app, BrowserWindow, ipcMain, Menu, shell } from 'electron';
 // eslint-disable-next-line import/no-unresolved
 import icon from '../../resources/icon.png?asset';
-import { analyzeSync } from './helpers/analyzer.js';
-import { executeSync } from './helpers/executor.js';
-import {
-    loadPairs,
-    loadSettings,
-    savePairs,
-    saveSettings,
-} from './helpers/settings.js';
-
-
-// Constants
-const fsp = fs.promises;
+import { settingsRead, settingsWrite } from './api/settings.js';
+import { historyRead, historyWrite } from './api/history.js';
+import { analysisRun } from './api/analysis.js';
+import { backupRun } from './api/backup.js';
+import { folderPick, folderRevealInOrigin } from './api/folders.js';
 
 
 // Variables
 let mainWindow;
-const analyzeCancelToken = { cancelled: false };
-const syncCancelToken = { cancelled: false };
+
+const analysisToken = { cancelled: false };
+
+const backupToken = { cancelled: false };
 
 
 // Internal
@@ -75,16 +69,9 @@ function createWindow() {
 // Main
 Menu.setApplicationMenu(null);
 
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-// Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
-    // Set app user model id for windows
     electronApp.setAppUserModelId('com.electron');
 
-    // Default open or close DevTools by F12 in development
-    // and ignore CommandOrControl + R in production.
-    // see https://github.com/alex8088/electron-toolkit/tree/master/packages/utils
     app.on('browser-window-created', (_, window) => {
         optimizer.watchWindowShortcuts(window);
     });
@@ -93,147 +80,76 @@ app.whenReady().then(() => {
     createWindow();
 
     // Handlers
-    ipcMain.handle('pick-folder', async () => {
-        const result = await dialog.showOpenDialog(mainWindow, {
-            properties: ['openDirectory'],
+
+    // Settings
+    ipcMain.handle('settings-read', settingsRead);
+
+    ipcMain.handle('settings-write', async (_evt, s) => {
+        await settingsWrite(s);
+    });
+
+    // History
+    ipcMain.handle('history-read', historyRead);
+
+    ipcMain.handle('history-write', async (_evt, h) => {
+        await historyWrite(h);
+    });
+
+    // Folders
+    ipcMain.handle('folder-pick', folderPick(mainWindow));
+
+    ipcMain.handle('folder-reveal-in-origin', async (_evt, { source, relativePath }) => {
+        await folderRevealInOrigin(source, relativePath);
+    });
+
+    // Analysis
+    ipcMain.handle('analysis-start', async (_evt, { source, destination }) => {
+        analysisToken.cancelled = false;
+        await analysisRun({
+            source,
+            destination,
+            token: analysisToken,
+            onProgress: (data) => {
+                mainWindow.webContents.send('analysis-progress', data);
+            },
+            onStepAdded: (step) => {
+                mainWindow.webContents.send('analysis-step-added', step);
+            },
         });
-        if (result.canceled || result.filePaths.length === 0) return null;
-        return result.filePaths[0];
+        if (!analysisToken.cancelled) {
+            mainWindow.webContents.send('analysis-completed');
+        }
     });
 
-    ipcMain.handle('analyze', async (_evt, { srcDir, dstDir }) => {
-        analyzeCancelToken.cancelled = false;
-
-        const progressCallback = (data) => {
-            mainWindow.webContents.send('analyze-progress', data);
-        };
-
-        const itemCallback = (step) => {
-            mainWindow.webContents.send('analyze-item', step);
-        };
-
-        const stopCallback = (data) => {
-            mainWindow.webContents.send('analyze-stopped', data);
-        };
-
-        const result = await analyzeSync(
-            srcDir,
-            dstDir,
-            analyzeCancelToken,
-            progressCallback,
-            itemCallback,
-            stopCallback
-        );
-
-        mainWindow.webContents.send('analyze-complete', result);
-        return result;
-    });
-
-    ipcMain.handle('analyze-cancel', async () => {
-        analyzeCancelToken.cancelled = true;
+    ipcMain.handle('analysis-cancel', async () => {
+        analysisToken.cancelled = true;
         return { ok: true };
     });
 
-    ipcMain.handle('sync', async (_evt, { srcDir, dstDir, plan }) => {
-        syncCancelToken.cancelled = false;
+    // Backup
+    ipcMain.handle('backup-start', async (_evt, { source, destination, plan }) => {
+        backupToken.cancelled = false;
 
-        const progressCallback = (payload) => {
-            mainWindow.webContents.send('sync-progress', payload);
-        };
-
-        const saveSuccessfulPairCallback = async (srcDir, dstDir) => {
-            try {
-                const existing = await loadPairs();
-                const normalized = p => join(p).replace(/\\/g, '/');
-                const srcN = normalized(srcDir);
-                const dstN = normalized(dstDir);
-                const withoutDup = existing.filter(e => !(e.src === srcN && e.dst === dstN));
-                withoutDup.unshift({ src: srcN, dst: dstN, lastSyncedAt: Date.now() });
-                const deduped = withoutDup.slice(0, 20); // keep last 20
-                await savePairs(deduped);
-            } catch {
-                // Do nothing
-            }
-        };
-
-        const result = await executeSync(
-            srcDir,
-            dstDir,
+        await backupRun({
+            source,
+            destination,
+            token: backupToken,
             plan,
-            progressCallback,
-            syncCancelToken,
-            saveSuccessfulPairCallback
-        );
+            onProgress: (payload) => {
+                mainWindow.webContents.send('backup-progress', payload);
+            },
+        });
 
-        if (result.cancelled) {
-            mainWindow.webContents.send('sync-stopped', { reason: 'user' });
+        if (backupToken.cancelled) {
+            mainWindow.webContents.send('backup-cancelled');
         }
 
         return { ok: true };
     });
 
-    ipcMain.handle('sync-cancel', async () => {
-        syncCancelToken.cancelled = true;
+    ipcMain.handle('backup-cancel', async () => {
+        backupToken.cancelled = true;
         return { ok: true };
-    });
-
-    ipcMain.handle('reveal-in-origin', async (_evt, { srcDir, relPath }) => {
-        try {
-            const target = join(srcDir, relPath);
-            try {
-                await fsp.access(target);
-                shell.showItemInFolder(target);
-                return { ok: true };
-            } catch {
-                let current = join(target, '..');
-                const rootStop = join(current, '..').split(join.sep)[0] + join.sep;
-                while (current && current !== rootStop) {
-                    try {
-                        const st = await fsp.stat(current);
-                        if (st.isDirectory()) {
-                            await shell.openPath(current);
-                            return { ok: true };
-                        }
-                    } catch {
-                        // Do nothing
-                    }
-                    const parent = join(current, '..');
-                    if (parent === current) break;
-                    current = parent;
-                }
-            }
-        } catch {
-            // Do nothing
-        }
-        return { ok: false };
-    });
-
-    ipcMain.handle('pairs-list', async () => {
-        const pairs = await loadPairs();
-        return pairs;
-    });
-
-    ipcMain.handle('pairs-delete', async (_evt, { src, dst }) => {
-        try {
-            const pairs = await loadPairs();
-            const normalized = p => join(p).replace(/\\/g, '/');
-            const srcN = normalized(src);
-            const dstN = normalized(dst);
-            const filtered = pairs.filter(p => !(p.src === srcN && p.dst === dstN));
-            await savePairs(filtered);
-            return { ok: true };
-        } catch {
-            return { ok: false };
-        }
-    });
-
-    ipcMain.handle('settings-get', async () => await loadSettings());
-
-    ipcMain.handle('settings-set', async (_evt, newSettings) => {
-        const current = await loadSettings();
-        const merged = { ...current, ...newSettings };
-        await saveSettings(merged);
-        return merged;
     });
 
     // iOS specific
@@ -248,9 +164,6 @@ app.whenReady().then(() => {
     });
 });
 
-// Quit when all windows are closed, except on macOS. There, it's common
-// for applications and their menu bar to stay active until the user quits
-// explicitly with Cmd + Q.
 app.on('window-all-closed', () => {
     mainWindow = null;
     if (process.platform !== 'darwin') {

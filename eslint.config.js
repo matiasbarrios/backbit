@@ -4,6 +4,7 @@ import globals from 'globals';
 import eslintPluginImport from 'eslint-plugin-import';
 import { defineConfig, globalIgnores } from 'eslint/config';
 import eslintPluginReact from 'eslint-plugin-react';
+import eslintPluginReactHooks from 'eslint-plugin-react-hooks';
 
 
 // Exported
@@ -30,8 +31,10 @@ export default defineConfig([
         plugins: {
             import: eslintPluginImport,
             react: eslintPluginReact,
+            'react-hooks': eslintPluginReactHooks,
         },
         rules: {
+            "arrow-body-style": ["error", "as-needed"],
             "arrow-parens": ["error", "as-needed",
                 {
                     requireForBlockBody: true,
@@ -46,6 +49,7 @@ export default defineConfig([
                     functions: "never",
                 },
             ],
+            "consistent-return": ["error"],
             "func-names": ["error", "as-needed"],
             "function-paren-newline": ["error", 
                 { 
@@ -68,10 +72,13 @@ export default defineConfig([
                 },
             ],
             "no-multiple-empty-lines": ["error", { max: 2, maxEOF: 1 }],
+            "no-multi-spaces": ["error"],
             "no-restricted-properties": ["warn"],
             "no-underscore-dangle": ["off"],
             "no-undef": ["warn"],
+            "no-use-before-define": ["error", { functions: true, classes: true, variables: true }],
             'no-unused-vars': ['error', { vars: 'all', args: 'after-used', ignoreRestSiblings: true }],
+            "no-await-in-loop": ["error"],
             "object-shorthand": ["off", "methods"],
             "prefer-regex-literals": ["off"],
             "quote-props": ["error", "as-needed",
@@ -82,6 +89,8 @@ export default defineConfig([
                 },
             ],
             quotes: ["error", "single", { avoidEscape: true, allowTemplateLiterals: true }],
+            "no-trailing-spaces": ["error"],
+            "space-in-parens": ["error", "never"],
             "import/exports-last": ["error"],
             "import/newline-after-import": ["error",
                 {
@@ -103,6 +112,9 @@ export default defineConfig([
             "import/prefer-default-export": ["off"],
             "import/extensions": ["off"],
             'react/jsx-uses-vars': 'error',
+            'react/jsx-no-undef': 'error',
+            'react-hooks/rules-of-hooks': 'error',
+            'react-hooks/exhaustive-deps': 'warn',
         },
         settings: {
             'import/resolver': {
