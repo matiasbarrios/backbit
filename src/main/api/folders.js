@@ -17,9 +17,9 @@ export const folderPick = mainWindow => async () => {
 };
 
 
-export const folderRevealInOrigin = async (source, relativePath) => {
+export const folderRevealInOrigin = async (root, relativePath) => {
     try {
-        const target = join(source, relativePath);
+        const target = join(root, relativePath);
         try {
             // Try to open the target
             await access(target);

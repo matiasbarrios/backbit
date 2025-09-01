@@ -1,6 +1,6 @@
 // Requirements
 import { Flex } from '@radix-ui/themes';
-import { useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useBackup } from '../../contexts/backup/index.jsx';
 import { navbarHeight } from '../../components/navbar.jsx';
@@ -17,18 +17,24 @@ const height = `calc(100dvh - ${navbarHeight}px)`;
 export default () => {
     const navigate = useNavigate();
     const { source, destination } = useBackup();
+    const [autoScroll, setAutoScroll] = useState(false);
+
+    const toggleAutoScroll = useCallback(() => {
+        setAutoScroll(prev => !prev);
+    }, []);
 
     useEffect(() => {
         if (!source || !destination) navigate('/');
     }, [source, destination, navigate]);
+
 
     if (!source || !destination) return null;
 
     return (
         <Flex direction="column" align="center" justify="start" pt="2" pb="4" gapY="3" style={{ minHeight: height, maxHeight: height }}>
             <Actions />
-            <Progress />
-            <List />
+            <Progress autoScroll={autoScroll} toggleAutoScroll={toggleAutoScroll} />
+            <List autoScroll={autoScroll} />
         </Flex>
     );
 };

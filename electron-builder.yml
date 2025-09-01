@@ -1,5 +1,5 @@
 appId: com.electron.app
-productName: backbit
+productName: BackBit
 directories:
   buildResources: build
 files:

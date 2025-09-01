@@ -23,8 +23,8 @@ const backupToken = { cancelled: false };
 function createWindow() {
     // Create the browser window.
     mainWindow = new BrowserWindow({
-        width: 1000,
-        height: 720,
+        width: 1230,
+        height: 800,
         show: false,
         autoHideMenuBar: true,
         ...(process.platform === 'linux' ? { icon } : {}),

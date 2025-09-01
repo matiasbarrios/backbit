@@ -43,8 +43,15 @@ export const useAnalysis = (state, dispatch) => {
     [analysisRunning, dispatch]);
 
     const analysisRestart = useCallback(async () => {
+        // First cancel any running analysis
+        if (analysisRunning) {
+            await window.api.analysisCancel();
+            dispatch({ type: 'ANALYSIS_CANCEL' });
+        }
+
+        // Then start a new analysis
         await analysisStart(source, destination);
-    }, [source, destination, analysisStart]);
+    }, [source, destination, analysisStart, analysisRunning, dispatch]);
 
     const analysisCancel = useCallback(async () => {
         await window.api.analysisCancel();

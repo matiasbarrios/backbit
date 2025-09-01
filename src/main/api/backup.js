@@ -2,7 +2,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { Transform } from 'node:stream';
 import { doAsync } from '../helpers/iterator';
 
 
@@ -10,18 +9,6 @@ import { doAsync } from '../helpers/iterator';
 const { mkdir, unlink, rename, stat, utimes } = fs.promises;
 
 const CONTINUOUS_PROGRESS_THROTTLE = 50; // ms
-
-
-// Internal
-const createDelayTransform = (delayMs = 1000) => new Transform({
-    transform(chunk, encoding, callback) {
-        // Add delay between chunks for debugging
-        setTimeout(() => {
-            this.push(chunk);
-            callback();
-        }, delayMs);
-    },
-});
 
 
 // Exported
@@ -90,11 +77,7 @@ export const planRun = async ({
 
                 write.on('close', resolve);
 
-                // Add delay transform for debugging (comment out for normal speed)
-                const delayTransform = createDelayTransform(1000); // 1 second delay
-                read.pipe(delayTransform).pipe(write);
-
-                // For normal speed, use: read.pipe(write);
+                read.pipe(write);
             });
 
             if (token?.cancelled) {

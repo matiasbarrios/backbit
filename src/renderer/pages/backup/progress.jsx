@@ -1,13 +1,14 @@
 // Requirements
-import { Flex, Progress, Separator, Text } from '@radix-ui/themes';
+import { Button, Flex, Progress, Separator, Text } from '@radix-ui/themes';
 import { useMemo } from 'react';
+import { LockClosedIcon, LockOpen1Icon } from '@radix-ui/react-icons';
 import { useBackup } from '../../contexts/backup/index.jsx';
 import { useI18n } from '../../contexts/i18n.jsx';
 import { formatBytes } from '../../helpers/format.js';
 
 
 // Exported
-export default () => {
+export default ({ autoScroll, toggleAutoScroll }) => {
     const { t } = useI18n();
     const {
         analysisRequested, analysisRunning, analysisCurrentPath,
@@ -39,17 +40,26 @@ export default () => {
                     )}
                 </Flex>
                 <Flex align="center" gapX="2">
-                    <Flex align="center" justify="start" gapX="1" style={{ whiteSpace: 'nowrap' }}>
-                        <Text size="1" color="gray">
-                            {`${stepsRemaining} ${stepsRemaining > 1 ? t('actions') : t('action')}`}
-                        </Text>
-                    </Flex>
-                    <Separator orientation="vertical" size="1" />
-                    <Flex align="center" justify="start" gapX="1" style={{ whiteSpace: 'nowrap' }}>
-                        <Text size="1" color="gray">
-                            {bytesRemaining}
-                        </Text>
-                    </Flex>
+                    {stepsRemaining > 0 && (
+                        <>
+                            <Flex align="center" justify="start" gapX="1" style={{ whiteSpace: 'nowrap' }}>
+                                <Text size="1" color="gray">
+                                    {`${stepsRemaining} ${stepsRemaining > 1 ? t('actions') : t('action')}`}
+                                </Text>
+                            </Flex>
+                            <Separator orientation="vertical" size="1" />
+                            <Flex align="center" justify="start" gapX="1" style={{ whiteSpace: 'nowrap' }}>
+                                <Text size="1" color="gray">
+                                    {bytesRemaining}
+                                </Text>
+                            </Flex>
+                            <Separator orientation="vertical" size="1" />
+                            <Button onClick={toggleAutoScroll} size="1" color="blue" variant="ghost" radius="medium" mx="1">
+                                {autoScroll ? <LockClosedIcon width={10} height={10} /> : <LockOpen1Icon width={10} height={10} />}
+                                scroll
+                            </Button>
+                        </>
+                    )}
                 </Flex>
             </Flex>
         </Flex>

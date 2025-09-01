@@ -4,27 +4,22 @@ import { useCallback } from 'react';
 
 // Exported
 export const useBackupSession = (state, dispatch) => {
-    const { backupRunning, planProgress } = state;
+    const { backupRunning } = state;
 
     const backupStart = useCallback(async (source, destination, steps) => {
         if (!steps || steps.length === 0 || backupRunning) return;
 
+        let unsubscribeProgress;
+
         const unsubscribeCancelled = window.api.onBackupCancelled(() => {
-            Object.entries(planProgress).forEach(([ path, p ]) => {
-                if (!p.stepProcessing || p.stepDone) return;
-                dispatch({
-                    type: 'BACKUP_STEP_UPDATE',
-                    stepPath: path,
-                    updates: { stepProcessing: false, stepCancelled: true },
-                });
-            });
             dispatch({ type: 'BACKUP_CANCEL' });
             unsubscribeCancelled();
+            if (unsubscribeProgress) unsubscribeProgress();
         });
 
         dispatch({ type: 'BACKUP_START' });
 
-        const unsubscribeProgress = window.api.onBackupProgress((e) => {
+        unsubscribeProgress = window.api.onBackupProgress((e) => {
             if (!e) return;
 
             // Plan done
@@ -59,8 +54,10 @@ export const useBackupSession = (state, dispatch) => {
         } catch (error) {
             console.error('Backup error:', error);
             dispatch({ type: 'BACKUP_CANCEL' });
+            unsubscribeProgress();
+            unsubscribeCancelled();
         }
-    }, [backupRunning, planProgress, dispatch]);
+    }, [backupRunning, dispatch]);
 
     const backupCancel = useCallback(async () => {
         await window.api.backupCancel();

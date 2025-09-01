@@ -1,5 +1,5 @@
 // Requirements
-import { Button, Flex, Text } from '@radix-ui/themes';
+import { Button, Flex, IconButton, Text } from '@radix-ui/themes';
 import { useCallback, useMemo } from 'react';
 import { ReloadIcon, StopIcon } from '@radix-ui/react-icons';
 import { useBackup } from '../../contexts/backup/index.jsx';
@@ -41,18 +41,16 @@ export default () => {
                 </Text>
             </Flex>
 
-            <Flex gap="2">
-                {!analysisRunning && (
-                    <Button onClick={analysisRestart} size="2" color="blue" variant="soft">
+            <Flex align="center" justify="end" gapX="4">
+                {!analysisRunning && !backupRunning && (
+                    <IconButton variant="ghost" onClick={analysisRestart} size="2" color="blue" radius="full">
                         <ReloadIcon width={12} height={12} />
-                        {t('Update')}
-                    </Button>
+                    </IconButton>
                 )}
-                {analysisRunning && (
-                    <Button variant="soft" onClick={analysisCancel} size="2" color="red">
+                {analysisRunning && !backupRunning && (
+                    <IconButton variant="ghost" onClick={analysisCancel} size="2" color="red" radius="full">
                         <StopIcon width={12} height={12} />
-                        {t('Stop analysis')}
-                    </Button>
+                    </IconButton>
                 )}
                 {analysisCompleted && plan.length > 0 && !backupRunning && (
                     <Button disabled={!backupReady} onClick={handleBackup} size="2" color="blue">
@@ -60,9 +58,9 @@ export default () => {
                     </Button>
                 )}
                 {backupRunning && (
-                    <Button variant="soft" onClick={backupCancel} size="2" color="red">
+                    <IconButton variant="ghost" onClick={backupCancel} size="2" color="red" radius="full">
                         <StopIcon width={12} height={12} />
-                    </Button>
+                    </IconButton>
                 )}
             </Flex>
         </Flex>
