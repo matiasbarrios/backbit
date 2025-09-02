@@ -117,16 +117,21 @@ export default () => {
     const { analysisStart } = useBackup();
     const { historyAdd } = useHistory();
 
+    const [going, setGoing] = useState(false);
+
     const handleSelectFolders = useCallback(async () => {
         const source = await window.api.folderPick();
         if (!source) return;
         const destination = await window.api.folderPick();
         if (!destination) return;
 
+        setGoing(true);
+        navigate('/backup');
         historyAdd(source, destination);
         analysisStart(source, destination);
-        navigate('/backup');
     }, [navigate, analysisStart, historyAdd]);
+
+    if (going) return null;
 
     return (
         <Flex direction="column" align="center" justify="center" gapY="2" flexGrow={1} style={{ minHeight: `calc(100dvh - ${navbarHeight}px)` }}>

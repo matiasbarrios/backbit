@@ -3,6 +3,8 @@
 
 Minimalist backup tool for mirroring a source folder to its destination. Compares files by size and modified time.
 
+Inspired by *Syncronize It!*, the only Windows app I kept missing after moving to macOS.
+
 ## Features
 
 - Cross-platform (Windows, macOS, Linux)
@@ -33,6 +35,12 @@ $ npm install
 
 ```bash
 $ npm run dev
+```
+
+If on Linux, you may need to previously run
+```bash
+$ sudo chown root:root node_modules/electron/dist/chrome-sandbox
+$ sudo chmod 4755 node_modules/electron/dist/chrome-sandbox
 ```
 
 ### Generating testing folders

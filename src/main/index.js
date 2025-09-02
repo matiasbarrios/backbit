@@ -60,7 +60,7 @@ function createWindow() {
     }
 
     // Open DevTools in development
-    if (process.env.NODE_ENV !== 'production') {
+    if (is.dev) {
         mainWindow.webContents.openDevTools({ mode: 'detach' });
     }
 }
@@ -70,7 +70,7 @@ function createWindow() {
 Menu.setApplicationMenu(null);
 
 app.whenReady().then(() => {
-    electronApp.setAppUserModelId('com.electron');
+    electronApp.setAppUserModelId('com.backbit.backbit');
 
     app.on('browser-window-created', (_, window) => {
         optimizer.watchWindowShortcuts(window);

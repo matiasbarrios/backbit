@@ -1,4 +1,4 @@
-appId: com.electron.app
+appId: com.backbit.backbit
 productName: BackBit
 directories:
   buildResources: build
@@ -29,11 +29,35 @@ dmg:
   artifactName: ${name}-${version}.${ext}
 linux:
   target:
-    - AppImage
-    - snap
-    - deb
-  maintainer: electronjs.org
+    - target: deb
+      arch:
+        - x64
+        - arm64
+    - target: AppImage
+      arch:
+        - x64
+        - arm64
+  maintainer: Matías Barrios <matias@magicalmixingconsole.com>
   category: Utility
+  synopsis: Minimalist backup tool for mirroring folders
+  description: BackBit is a minimalist backup tool for mirroring a source folder to its destination with a clean and intuitive interface.
+  desktop:
+    Name: BackBit
+    Comment: Minimalist backup tool
+    Keywords: backup;sync;mirror;files;
+    StartupWMClass: BackBit
+  icon: build/linux-icons/
+deb:
+  priority: optional
+  depends:
+    - libgtk-3-0
+    - libnotify4
+    - libnss3
+    - libxss1
+    - libxtst6
+    - xdg-utils
+    - libatspi2.0-0
+    - libsecret-1-0
 appImage:
   artifactName: ${name}-${version}.${ext}
 npmRebuild: false

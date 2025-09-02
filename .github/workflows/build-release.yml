@@ -1,0 +1,117 @@
+name: Build & Publish Releases
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Which job to run (leave empty to run all)'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+jobs:
+  build-linux:
+    if: github.event_name != 'workflow_dispatch' || github.event.inputs.target == '' || github.event.inputs.target == 'linux'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            ~/.npm
+          key: linux-node-${{ hashFiles('package.json') }}
+          restore-keys: |
+            linux-node-
+
+      - run: npm install
+
+      - name: Build with Forge (Linux)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm run build:linux
+
+      - name: Rename Linux artifacts
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          if compgen -G "dist/*.deb" > /dev/null; then
+            for f in dist/*.deb; do
+              mv "$f" "dist/BackBit-${VERSION}-amd64.deb"
+            done
+          fi
+
+      - name: Upload Linux artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: backbit-linux
+          path: |
+            dist/BackBit-*-amd64.deb
+            dist/BackBit-*.AppImage
+          if-no-files-found: ignore
+
+  build-windows:
+    if: github.event_name != 'workflow_dispatch' || github.event.inputs.target == '' || github.event.inputs.target == 'windows'
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            ${{ format('{0}\\npm-cache', env.AppData) }}
+          key: windows-node-${{ hashFiles('package.json') }}
+          restore-keys: |
+            windows-node-
+
+      - run: npm install
+
+      - name: Build with Forge (Windows)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm run build:win
+
+      - name: Rename Windows .exe
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}".Substring(1)
+          $searchPath = "dist"
+          $pattern = "*Setup*.exe"
+          $exeFile = Get-ChildItem -Path $searchPath -Filter $pattern | Select-Object -First 1
+          if ($exeFile) {
+            $newPath = "dist/BackBit-$version-x64.exe"
+            Move-Item $exeFile.FullName $newPath
+            Write-Output "Renamed to $newPath"
+          } else {
+            Write-Output "❌ No EXE found in $searchPath"
+            Get-ChildItem -Recurse $searchPath
+          }
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backbit-windows
+          path: dist/BackBit-*-x64.exe
+          if-no-files-found: error
