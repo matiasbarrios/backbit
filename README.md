@@ -5,6 +5,9 @@ Minimalist backup tool for mirroring a source folder to its destination. Compare
 
 Inspired by *Syncronize It!*, the only Windows app I kept missing after moving to macOS.
 
+<img src="resources/screenshot-1-select-folders.png" alt="Select Folders" width="830">
+<img src="resources/screenshot-2-backup.png" alt="Select Folders" width="830">
+
 ## Features
 
 - Cross-platform (Windows, macOS, Linux)
